@@ -7,6 +7,11 @@ parser = argparse.ArgumentParser(description='usage: configgen.py [-o output_dir
 parser.add_argument('-g', action="store_true", help="Start GUI")
 parser.add_argument('-o', metavar='output_dir', help="Directory to put output, recommend using abides/config/")
 parser.add_argument('-f', metavar='file_name', help="Base file name for output files")
+parser.add_argument('-s', metavar='seed', help="Seed for the output file")
+parser.add_argument('-d', metavar='historical_date', help="Date to feed to oracle (Format: YYYY-MM-DD)")
+parser.add_argument('-st', metavar='start_time', help="Time at which to start simulation")
+parser.add_argument('-et', metavar='end_time', help="Time at which to end simulation")
+parser.add_argument('-sc', metavar='starting_cash', help="Starting cash amount (in cents)")
 parser.add_argument('-m', metavar='market_maker', help="Number of Market Maker agents needed in config")
 parser.add_argument('-z', metavar='zero_intel', help="Number of Zero Intelligence agents needed in config")
 parser.add_argument('-n', metavar='noise', help="Number of Noise agents needed in config")
@@ -41,6 +46,10 @@ def add_imports():
     imports += "from util.oracle.DataOracle import DataOracle\nfrom util.oracle.ExternalFileOracle import ExternalFileOracle\n"
     imports += "from util.oracle.MeanRevertingOracle import MeanRevertingOracle\nfrom util.oracle.SparseMeanRevertingOracle import SparseMeanRevertingOracle\n\n"
 
+    ## add latency model ##
+    imports += "from model.LatencyModel import LatencyModel\n\n"
+
+
     ## add all agents ##
     imports += "from agent.ExchangeAgent import ExchangeAgent\nfrom agent.FundamentalTrackingAgent import FundamentalTrackingAgent\n"
     imports += "from agent.HeuristicBeliefLearningAgent import HeuristicBeliefLearningAgent\nfrom agent.NoiseAgent import NoiseAgent\n"
@@ -53,7 +62,7 @@ def add_imports():
     write_to_file(imports)
 
 ## add general configuration information to file ##
-def add_gen_config(seed):
+def add_gen_config(seed = None):
 
     gen = "###### GENERAL CONFIGURATION INFORMATION ######\n\n"
 
@@ -61,7 +70,6 @@ def add_gen_config(seed):
     gen += "parser = argparse.ArgumentParser(description='Default generated options for parsing arguments')\n"
     gen += "parser.add_argument('-c', '--config', required=True, help='Name of config file to execute')\n"
     gen += "parser.add_argument('-l', '--log_dir', default=None, help='Log directory name (default: unix timestamp at program start)')\n"
-    gen += "parser.add_argument('-s', '--seed', type=int, default=None, help='numpy.random.seed() for simulation')\n"
     gen += "parser.add_argument('-v', '--verbose', action='store_true', help='Maximum verbosity!')\n"
     gen += "args, remaining_args = parser.parse_known_args()\n\n"
 
@@ -236,7 +244,9 @@ class AgentConfig(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text=""" 
+        label = tk.Label(self, text="""Please specify the number of each type of agent. The trading agents listed here
+        are not the only agents available in ABIDES. Please see documentation foradditional
+        agent options as well as well as a tutorial for creating one's own agent.
         """, font=LARGE_FONT)
         label.grid(row = 0, column = 0)
 
@@ -273,25 +283,25 @@ class AgentConfig(tk.Frame):
         v_entry.grid(row = 14, column = 0)
 
         finish_btn = tk.Button(self, text="Finish",
-                            command=lambda: [controller.show_frame(StartPage), add_agents(cash_entry.get(), mm_entry.get(), zi_entry.get(), n_entry.get(), v_entry.get())])
+                            command=lambda: [controller.show_frame(StartPage), add_agents(cash_entry.get(), mm_entry.get(), zi_entry.get(), n_entry.get(), v_entry.get()), add_kernel(), exit()])
         finish_btn.grid(row = 15, column = 0)
 
 def add_agents(cash = 10000000, num_mm = 0, num_zi = 0, num_n = 0, num_v = 0):
 
-    if cash == "":
+    if cash == "" or cash == None:
         cash = 10000000
-    if num_mm == "":
+    if num_mm == "" or num_mm == None:
         num_mm = 0
-    if num_zi == "":
+    if num_zi == "" or num_zi == None:
         num_zi = 0
-    if num_n == "":
+    if num_n == "" or num_n == None:
         num_n = 0
-    if num_v == "":
+    if num_v == "" or num_v == None:
         num_v = 0
     
 
     ## add default vars, note starting cash ##
-    agents = "agent_count, agents, agent_types = 0, [], []\nstarting_cash = " + str(cash) + "\n"  #in cents, change if needed,"
+    agents = "###### AGENTS ######\n\nagent_count, agents, agent_types = 0, [], []\nstarting_cash = " + str(cash) + "\n"  #in cents, change if needed,"
     
     ## add only one echange agent, uniform across all config files ##
     agents += "agents.extend([ExchangeAgent(id=0, name='EXCHANGE_AGENT', type='ExchangeAgent', mkt_open=mkt_open," 
@@ -346,8 +356,23 @@ def add_agents(cash = 10000000, num_mm = 0, num_zi = 0, num_n = 0, num_v = 0):
     
     write_to_file(agents)
 
+## add kernel information, no params needed ##
 def add_kernel():
-    
+
+    kernel = "###### KERNEL ######\n\n"
+    kernel += "kernel = Kernel('" + final_config + "', random_state=np.random.RandomState(seed=np.random.randint(low=0, high=2 ** 32, dtype='uint64')))\n\n"
+    kernel += "kernelStartTime = historical_date\nkernelStopTime = mkt_close + pd.to_timedelta('00:01:00')\n\n"
+    kernel += "defaultComputationDelay = 50  #50 nanoseconds\nlatency_rstate = np.random.RandomState(seed=np.random.randint(low=0, high=2**32))\n\n"
+    kernel += "pairwise = (agent_count, agent_count)\nnyc_to_seattle_meters = 3866660\n"
+    kernel += "pairwise_distances = util.generate_uniform_random_pairwise_dist_on_line(0.0, nyc_to_seattle_meters, agent_count, random_state=latency_rstate)\n"
+    kernel += "pairwise_latencies = util.meters_to_light_ns(pairwise_distances)\nmodel_args = {'connected': True, 'min_latency': pairwise_latencies}\n"
+    kernel += "latency_model = LatencyModel(latency_model='deterministic', random_state=latency_rstate, kwargs=model_args)\n\n"
+    kernel += "kernel.runner(agents=agents, startTime=kernelStartTime, stopTime=kernelStopTime, agentLatencyModel=latency_model, "
+    kernel += "defaultComputationDelay=defaultComputationDelay, oracle=oracle, log_dir=args.log_dir)\n\n"
+    kernel += "simulation_end_time = dt.datetime.now()\n\nprint('Simulation End Time: {}'.format(simulation_end_time))\n"
+    kernel += "print('Time taken to run simulation: {}'.format(simulation_end_time - simulation_start_time))\n\n"
+
+    write_to_file(kernel)
 
 if __name__ == "__main__":
 
@@ -371,13 +396,13 @@ if __name__ == "__main__":
         add_imports()
 
         ## add general configuration information to file ##
-        add_gen_config(None)
+        add_gen_config(int(args.s))
 
         ## add oracle information ##
-        add_oracle()
+        add_oracle(date = str(args.d), mkt_open = str(args.st), mkt_close = str(args.et))
 
         ## add agents ##
-        add_agents()
+        add_agents(cash = args.sc, num_mm = args.m, num_zi = args.z, num_n = args.n, num_v = args.v)
 
         ## add kernel information ##
         add_kernel()
