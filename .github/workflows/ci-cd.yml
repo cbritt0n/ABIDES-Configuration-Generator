@@ -49,6 +49,12 @@ jobs:
     - name: Display Python version
       run: python -c "import sys; print(f'Python {sys.version}')"
     
+    - name: Run diagnostic test (debug CI issues)
+      run: python diagnostic_test.py
+      continue-on-error: true
+      env:
+        PYTHONIOENCODING: utf-8
+    
     - name: Verify zero dependencies (stdlib only)
       run: python verify_deps.py
       env:

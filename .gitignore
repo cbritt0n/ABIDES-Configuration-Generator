@@ -66,6 +66,8 @@ Thumbs.db
 *.py
 !configgen.py
 !examples/*.py
+!verify_deps.py
+!diagnostic_test.py
 
 # Logs
 *.log
