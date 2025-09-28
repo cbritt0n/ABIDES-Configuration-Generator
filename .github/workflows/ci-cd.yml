@@ -50,69 +50,28 @@ jobs:
       run: python -c "import sys; print(f'Python {sys.version}')"
     
     - name: Verify zero dependencies (stdlib only)
-      run: |
-        echo "Verifying application uses only Python standard library..."
-        python -c "
-        import ast, sys, os
-        
-        # Ensure UTF-8 encoding on all platforms
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8')
-        if hasattr(sys.stderr, 'reconfigure'):
-            sys.stderr.reconfigure(encoding='utf-8')
-        
-        try:
-            with open('configgen.py', 'r', encoding='utf-8') as f:
-                content = f.read()
-        except UnicodeDecodeError as e:
-            print(f'ERROR: Unicode decoding failed: {e}')
-            print('Attempting to read with error handling...')
-            with open('configgen.py', 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-        
-        print(f'Successfully read {len(content)} characters from configgen.py')
-        
-        # Parse the AST to find all imports
-        tree = ast.parse(content)
-        imports = set()
-        
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.add(alias.name.split('.')[0])
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imports.add(node.module.split('.')[0])
-        
-        # Standard library modules we expect to use
-        stdlib_modules = {
-            'argparse', 'os', 'sys', 'datetime', 'random', 'logging', 
-            'tempfile', 'json', 'time', 'subprocess', 'shutil', 'pathlib',
-            're', 'typing', 'tkinter', 'traceback', 'ast'
-        }
-        
-        # Filter out None and check for external dependencies
-        imports = {imp for imp in imports if imp}
-        external_imports = imports - stdlib_modules
-        
-        if external_imports:
-            print(f'ERROR: External dependencies found: {sorted(external_imports)}')
-            sys.exit(1)
-        else:
-            print(f'✅ Zero external dependencies confirmed. Imports: {sorted(imports)}')
-        "
+      run: python verify_deps.py
+      env:
+        PYTHONIOENCODING: utf-8
     
     - name: Syntax validation
       run: python -m py_compile configgen.py
     
     - name: Test basic CLI functionality
+      shell: bash
       run: |
         echo "Testing basic CLI functionality..."
         python configgen.py --version
+        echo "Version check passed"
         python configgen.py --help > /dev/null
+        echo "Help check passed" 
         python configgen.py --list-templates > /dev/null
         echo "✅ Basic CLI tests passed"
+      env:
+        PYTHONIOENCODING: utf-8
     
     - name: Test research templates
+      shell: bash
       run: |
         echo "Testing all research templates..."
         python configgen.py --template rmsc03 -f test_rmsc03 --symbol TEST
@@ -121,8 +80,11 @@ jobs:
         python configgen.py --template behavioral -f test_behavioral --symbol TEST
         python configgen.py --template minimal -f test_minimal --symbol TEST
         echo "✅ All templates generated successfully"
+      env:
+        PYTHONIOENCODING: utf-8
     
     - name: Test all agent types
+      shell: bash
       run: |
         echo "Testing all 6 agent types..."
         python configgen.py -f test_mm --market-makers 5 --zero-intelligence 10
@@ -132,6 +94,8 @@ jobs:
         python configgen.py -f test_na --noise-agents 20 --zero-intelligence 10
         python configgen.py -f test_va -va 15 --zero-intelligence 10
         echo "✅ All agent types working correctly"
+      env:
+        PYTHONIOENCODING: utf-8
     
     - name: Test ABIDES-Gym integration
       run: |
