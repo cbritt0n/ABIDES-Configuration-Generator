@@ -64,7 +64,8 @@ jobs:
         # Standard library modules we expect to use
         stdlib_modules = {
             'argparse', 'os', 'sys', 'datetime', 'random', 'logging', 
-            'tempfile', 'json', 'time', 'subprocess', 'shutil'
+            'tempfile', 'json', 'time', 'subprocess', 'shutil', 'pathlib',
+            're', 'typing', 'tkinter', 'traceback', 'ast'
         }
         
         # Filter out None and check for external dependencies
@@ -83,9 +84,11 @@ jobs:
     
     - name: Test basic CLI functionality
       run: |
+        echo "Testing basic CLI functionality..."
         python configgen.py --version
         python configgen.py --help > /dev/null
         python configgen.py --list-templates > /dev/null
+        echo "✅ Basic CLI tests passed"
     
     - name: Test research templates
       run: |
@@ -105,7 +108,7 @@ jobs:
         python configgen.py -f test_mo --momentum-agents 8 --zero-intelligence 10
         python configgen.py -f test_zi --zero-intelligence 100
         python configgen.py -f test_na --noise-agents 20 --zero-intelligence 10
-        python configgen.py -f test_va --value-agents 15 --zero-intelligence 10
+        python configgen.py -f test_va -va 15 --zero-intelligence 10
         echo "✅ All agent types working correctly"
     
     - name: Test ABIDES-Gym integration
@@ -120,7 +123,7 @@ jobs:
         echo "Testing comprehensive configuration with all agent types..."
         python configgen.py -f test_comprehensive \
           --market-makers 5 --adaptive-market-makers 3 --momentum-agents 8 \
-          --zero-intelligence 100 --noise-agents 20 --value-agents 15 \
+          --zero-intelligence 100 --noise-agents 20 -va 15 \
           --symbol AAPL --starting-cash 5000000
         echo "✅ Comprehensive configuration generated successfully"
     

@@ -362,7 +362,7 @@ For more information: https://github.com/jpmorganchase/abides-jpmc-public
                            help="Number of Zero Intelligence agents (random trading)")
     agent_group.add_argument('-na', '--noise-agents', metavar='N', type=int, default=0,
                            help="Number of Noise agents (background trading)")
-    agent_group.add_argument('-v', '--value-agents', metavar='N', type=int, default=0,
+    agent_group.add_argument('-va', '--value-agents', metavar='N', type=int, default=0,
                            help="Number of Value agents (fundamental trading)")
     agent_group.add_argument('-mo', '--momentum-agents', metavar='N', type=int, default=0,
                            help="Number of Momentum agents (trend following)")
