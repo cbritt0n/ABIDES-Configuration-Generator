@@ -67,7 +67,9 @@ Thumbs.db
 !configgen.py
 !examples/*.py
 !verify_deps.py
+!verify_deps_simple.py
 !diagnostic_test.py
+!test_windows_ci.py
 
 # Logs
 *.log
