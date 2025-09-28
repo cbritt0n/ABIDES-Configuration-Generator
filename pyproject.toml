@@ -1,0 +1,141 @@
+# ABIDES Configuration Generator v1.0.0 - Modern Python Packaging
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "abides-config-generator"
+version = "1.0.0"
+authors = [
+    {name = "ABIDES Development Team"},
+    {name = "Christian Britton"},
+]
+description = "The definitive configuration generator for ABIDES market simulations with research templates, 6 agent types, and ABIDES-Gym compatibility"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Financial and Insurance Industry", 
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9", 
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+keywords = [
+    "abides", "simulation", "agent-based-modeling", "finance", "trading", 
+    "market-microstructure", "reinforcement-learning", "algorithmic-trading",
+    "rmsc03", "rmsc04", "research-templates"
+]
+# Zero external dependencies - uses only Python standard library
+dependencies = []
+
+[project.optional-dependencies]
+gui = [
+    "tkinter; sys_platform != 'darwin'",
+    "customtkinter>=5.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=5.0.0",
+    "mypy>=0.991",
+    "pre-commit>=2.20.0",
+    "tox>=4.0.0",
+]
+docs = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=8.5.0",
+    "mkdocstrings[python]>=0.19.0",
+]
+
+[project.scripts]
+abides-configgen = "configgen:main"
+
+[project.urls] 
+Homepage = "https://github.com/jpmorganchase/abides-jpmc-public"
+Repository = "https://github.com/jpmorganchase/abides-jpmc-public"
+Documentation = "https://github.com/jpmorganchase/abides-jpmc-public/tree/main/ABIDES-Configuration-Generator"
+"Bug Tracker" = "https://github.com/jpmorganchase/abides-jpmc-public/issues"
+"Research Papers" = "https://arxiv.org/search/?query=ABIDES&searchtype=all"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "abides_config_generator.__version__"}
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=abides_config_generator",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "gui: GUI tests (requires display)",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "tests/*",
+    "src/abides_config_generator/gui/*",  # Exclude GUI from coverage if needed
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\bProtocol\):",
+    "@(abc\.)?abstractmethod",
+]

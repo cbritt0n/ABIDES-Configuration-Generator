@@ -1,0 +1,82 @@
+# ABIDES Configuration Generator v1.0.0 - Docker Compose
+# Simplified configuration for production and development use
+
+version: '3.8'
+
+services:
+  # Main application service
+  abides-configgen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: abides-configgen:v1.0.0
+    container_name: abides-configgen
+    restart: unless-stopped
+    
+    # Security settings
+    user: "1001:1001"
+    read_only: true
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LC_ALL=C.UTF-8
+      - LANG=C.UTF-8
+    
+    # Volume mounts for output
+    volumes:
+      - ./output:/app/output
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    
+    # Default command
+    command: ["--help"]
+
+  # Development service for interactive work
+  abides-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: abides-configgen:v2.0.0
+    container_name: abides-dev
+    
+    # Development settings
+    user: "1001:1001"
+    tty: true
+    stdin_open: true
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LC_ALL=C.UTF-8
+      - LANG=C.UTF-8
+      - DEVELOPMENT=true
+    
+    # Volume mounts
+    volumes:
+      - .:/workspace
+      - ./output:/app/output
+      - ./configs:/app/configs
+    
+    # Working directory for development
+    working_dir: /workspace
+    
+    # Interactive bash session
+    command: ["bash"]
+    
+    profiles:
+      - dev
+
+# Usage Examples:
+#
+# Run main application:
+#   docker-compose up abides-configgen
+#
+# Generate specific config:
+#   docker-compose run --rm abides-configgen --template rmsc03 -f test_config
+#
+# Development mode:
+#   docker-compose --profile dev up abides-dev
+#
+# Quick template listing:
+#   docker-compose run --rm abides-configgen --list-templates

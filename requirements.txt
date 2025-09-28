@@ -1,0 +1,47 @@
+# ABIDES Configuration Generator v1.0.0 - Dependencies
+# Production-ready configuration generator with minimal external dependencies
+
+# ABIDES Framework Dependencies (required for generated configurations)
+# Note: These are imported in generated files, not required for the generator itself
+# numpy>=1.20.0        # Required by generated ABIDES configurations
+# pandas>=1.3.0        # Required by generated ABIDES configurations  
+
+# Core Generator Dependencies
+# The generator itself has zero external dependencies beyond Python 3.8+ standard library
+
+# Standard Library Modules Used (no installation required):
+# - argparse: CLI argument parsing
+# - os, sys: System utilities
+# - re: Regular expressions for validation
+# - logging: Professional logging
+# - pathlib: Cross-platform file paths
+# - datetime: Date and time handling
+# - typing: Type hints for production quality
+# - tkinter: GUI framework (optional, built-in with Python)
+
+# Development Dependencies (uncomment for development/testing)
+# pytest>=7.0.0
+# black>=22.0.0  
+# flake8>=5.0.0
+# mypy>=0.991
+
+# Future Enhancement Dependencies (for potential v2.1 features)
+# typer>=0.7.0          # Enhanced CLI framework
+# rich>=12.0.0          # Rich terminal output
+# pydantic>=1.10.0      # Data validation
+# jinja2>=3.0.0         # Template engine
+
+# Production Deployment (uncomment if needed)
+# docker>=5.0.0
+# kubernetes>=24.0.0
+
+# Note: The generator produces ABIDES configuration files that require:
+# - ABIDES framework installation (abides-core, abides-markets)  
+# - numpy, pandas (for the generated configurations)
+# - Python 3.8+ with standard library
+
+# Zero external dependencies design ensures:
+# ✅ Easy installation and deployment
+# ✅ Minimal security surface area  
+# ✅ Maximum compatibility across environments
+# ✅ Reduced maintenance overhead

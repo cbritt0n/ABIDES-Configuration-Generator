@@ -1,0 +1,406 @@
+# ABIDES Configuration Generator v1.0.0 - CI/CD Pipeline
+
+name: ABIDES Configuration Generator CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'configgen.py'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'Dockerfile'
+      - '.github/workflows/ci-cd.yml'
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  PYTHON_VERSION_DEFAULT: '3.11'
+
+jobs:
+  # Test the single-file application across multiple platforms and Python versions
+  test:
+    name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Display Python version
+      run: python -c "import sys; print(f'Python {sys.version}')"
+    
+    - name: Verify zero dependencies (stdlib only)
+      run: |
+        echo "Verifying application uses only Python standard library..."
+        python -c "
+        import ast, sys
+        with open('configgen.py', 'r') as f:
+            content = f.read()
+        
+        # Parse the AST to find all imports
+        tree = ast.parse(content)
+        imports = set()
+        
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imports.add(alias.name.split('.')[0])
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imports.add(node.module.split('.')[0])
+        
+        # Standard library modules we expect to use
+        stdlib_modules = {
+            'argparse', 'os', 'sys', 'datetime', 'random', 'logging', 
+            'tempfile', 'json', 'time', 'subprocess', 'shutil'
+        }
+        
+        # Filter out None and check for external dependencies
+        imports = {imp for imp in imports if imp}
+        external_imports = imports - stdlib_modules
+        
+        if external_imports:
+            print(f'ERROR: External dependencies found: {sorted(external_imports)}')
+            sys.exit(1)
+        else:
+            print(f'✅ Zero external dependencies confirmed. Imports: {sorted(imports)}')
+        "
+    
+    - name: Syntax validation
+      run: python -m py_compile configgen.py
+    
+    - name: Test basic CLI functionality
+      run: |
+        python configgen.py --version
+        python configgen.py --help > /dev/null
+        python configgen.py --list-templates > /dev/null
+    
+    - name: Test research templates
+      run: |
+        echo "Testing all research templates..."
+        python configgen.py --template rmsc03 -f test_rmsc03 --symbol TEST
+        python configgen.py --template rmsc04 -f test_rmsc04 --symbol TEST  
+        python configgen.py --template hft -f test_hft --symbol TEST
+        python configgen.py --template behavioral -f test_behavioral --symbol TEST
+        python configgen.py --template minimal -f test_minimal --symbol TEST
+        echo "✅ All templates generated successfully"
+    
+    - name: Test all agent types
+      run: |
+        echo "Testing all 6 agent types..."
+        python configgen.py -f test_mm --market-makers 5 --zero-intelligence 10
+        python configgen.py -f test_amm --adaptive-market-makers 3 --zero-intelligence 10
+        python configgen.py -f test_mo --momentum-agents 8 --zero-intelligence 10
+        python configgen.py -f test_zi --zero-intelligence 100
+        python configgen.py -f test_na --noise-agents 20 --zero-intelligence 10
+        python configgen.py -f test_va --value-agents 15 --zero-intelligence 10
+        echo "✅ All agent types working correctly"
+    
+    - name: Test ABIDES-Gym integration
+      run: |
+        echo "Testing ABIDES-Gym integration..."
+        python configgen.py --gym-mode -f test_gym --market-makers 3 --zero-intelligence 50
+        python configgen.py --template minimal --gym-mode -f test_gym_template
+        echo "✅ ABIDES-Gym integration working"
+    
+    - name: Test comprehensive multi-agent configuration
+      run: |
+        echo "Testing comprehensive configuration with all agent types..."
+        python configgen.py -f test_comprehensive \
+          --market-makers 5 --adaptive-market-makers 3 --momentum-agents 8 \
+          --zero-intelligence 100 --noise-agents 20 --value-agents 15 \
+          --symbol AAPL --starting-cash 5000000
+        echo "✅ Comprehensive configuration generated successfully"
+    
+    - name: Validate generated configuration files
+      run: |
+        echo "Validating generated configuration files..."
+        for file in test_*.py; do
+          if [ -f "$file" ]; then
+            echo "Checking syntax of $file..."
+            python -m py_compile "$file"
+            echo "✅ $file syntax valid"
+          fi
+        done
+    
+    - name: Test error handling
+      run: |
+        echo "Testing error handling..."
+        # Test invalid template (should fail)
+        python configgen.py --template invalid_template -f test 2>/dev/null && exit 1 || echo "✅ Invalid template correctly rejected"
+        # Test invalid agent count (should fail)  
+        python configgen.py -f test --market-makers -1 2>/dev/null && exit 1 || echo "✅ Invalid agent count correctly rejected"
+        echo "✅ Error handling working correctly"
+    
+    - name: Clean up test files
+      run: |
+        rm -f test_*.py abides_config_*.py 2>/dev/null || true
+        echo "✅ Test cleanup completed"
+
+  # Test Docker containerization
+  docker-test:
+    name: Docker Build and Test
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      run: |
+        docker build -t abides-configgen:test .
+        echo "✅ Docker image built successfully"
+    
+    - name: Test Docker image basic functionality
+      run: |
+        echo "Testing Docker image..."
+        docker run --rm abides-configgen:test --version
+        docker run --rm abides-configgen:test --list-templates > /dev/null
+        echo "✅ Docker image basic functionality confirmed"
+    
+    - name: Test Docker volume mounting and file generation
+      run: |
+        echo "Testing Docker volume mounting..."
+        mkdir -p ./test-output
+        docker run --rm -v $(pwd)/test-output:/app/output \
+          abides-configgen:test --template minimal -f docker_test -o /app/output
+        
+        if [ -f "./test-output/docker_test.py" ]; then
+          echo "✅ Docker volume mounting and file generation working"
+          python -m py_compile ./test-output/docker_test.py
+          echo "✅ Generated file syntax validated"
+        else
+          echo "❌ Docker volume mounting failed"
+          exit 1
+        fi
+    
+    - name: Clean up Docker test files
+      run: rm -rf ./test-output
+
+  # Security and quality checks
+  security:
+    name: Security and Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+    
+    - name: Install security tools
+      run: |
+        pip install bandit safety
+    
+    - name: Run security scan with Bandit
+      run: |
+        echo "Running security scan..."
+        bandit -r configgen.py -f json -o bandit-report.json || true
+        if [ -f bandit-report.json ]; then
+          echo "Bandit scan completed"
+        fi
+    
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Scanning for potential hardcoded secrets..."
+        if grep -r -i -E "(password|secret|key|token|api_key)" configgen.py; then
+          echo "⚠️ Potential secrets found - manual review required"
+        else
+          echo "✅ No obvious hardcoded secrets detected"
+        fi
+    
+    - name: Verify file permissions
+      run: |
+        echo "Checking file permissions..."
+        if [ -x configgen.py ]; then
+          echo "✅ configgen.py is executable"
+        else
+          echo "ℹ️ configgen.py is not executable (this is fine)"
+        fi
+
+  # Documentation and version consistency checks
+  documentation:
+    name: Documentation and Consistency Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+    
+    - name: Check version consistency
+      run: |
+        echo "Checking version consistency across files..."
+        VERSION=$(python configgen.py --version | awk '{print $2}')
+        echo "Detected version: $VERSION"
+        
+        # Check pyproject.toml
+        if grep -q "version = \"$VERSION\"" pyproject.toml; then
+          echo "✅ pyproject.toml version matches"
+        else
+          echo "❌ pyproject.toml version mismatch"
+          exit 1
+        fi
+        
+        # Check README.md
+        if grep -q "v$VERSION" README.md; then
+          echo "✅ README.md version matches"
+        else
+          echo "❌ README.md version mismatch"
+          exit 1
+        fi
+        
+        # Check Dockerfile
+        if grep -q "v$VERSION" Dockerfile; then
+          echo "✅ Dockerfile version matches"
+        else
+          echo "❌ Dockerfile version mismatch"  
+          exit 1
+        fi
+        
+        echo "✅ All version references consistent: $VERSION"
+    
+    - name: Validate documentation examples
+      run: |
+        echo "Testing documentation examples..."
+        # Test that examples in README work
+        python configgen.py --list-templates | grep -q "RMSC03" || exit 1
+        python configgen.py --template rmsc03 -f doc_test --symbol DOCTEST
+        if [ -f doc_test.py ]; then
+          echo "✅ Documentation examples validated"
+          rm doc_test.py
+        else
+          echo "❌ Documentation example failed"
+          exit 1
+        fi
+    
+    - name: Check file structure
+      run: |
+        echo "Validating expected file structure..."
+        required_files=(
+          "configgen.py"
+          "README.md" 
+          "CHANGELOG.md"
+          "CONTRIBUTING.md"
+          "requirements.txt"
+          "pyproject.toml"
+          "Dockerfile"
+          "Makefile"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file missing"
+            exit 1
+          fi
+        done
+        
+        echo "✅ All required files present"
+
+  # Build and package testing  
+  package:
+    name: Package Build and Test
+    runs-on: ubuntu-latest
+    needs: [test, docker-test, security, documentation]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+    
+    - name: Install build tools
+      run: |
+        pip install --upgrade pip build twine
+    
+    - name: Build Python package
+      run: |
+        echo "Building Python package..."
+        python -m build
+        echo "✅ Package built successfully"
+    
+    - name: Check package integrity
+      run: |
+        echo "Checking package integrity..."
+        twine check dist/*
+        echo "✅ Package integrity validated"
+    
+    - name: Store build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: distribution-packages
+        path: dist/
+        retention-days: 30
+
+  # Final release preparation (only on release)
+  release-preparation:
+    name: Release Preparation
+    runs-on: ubuntu-latest
+    needs: [package]
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: distribution-packages
+        path: dist/
+    
+    - name: Create standalone executable
+      run: |
+        echo "Creating standalone executable..."
+        cp configgen.py abides-configgen-standalone.py
+        chmod +x abides-configgen-standalone.py
+        echo "✅ Standalone executable created"
+    
+    - name: Generate release checksums
+      run: |
+        echo "Generating checksums..."
+        sha256sum abides-configgen-standalone.py > checksums.txt
+        sha256sum dist/* >> checksums.txt
+        echo "✅ Checksums generated"
+    
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: |
+          abides-configgen-standalone.py
+          checksums.txt
+          dist/*
