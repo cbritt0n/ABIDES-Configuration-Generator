@@ -18,6 +18,7 @@ on:
 
 env:
   PYTHON_VERSION_DEFAULT: '3.11'
+  PYTHONIOENCODING: 'utf-8'
 
 jobs:
   # Test the single-file application across multiple platforms and Python versions
@@ -39,6 +40,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
+    - name: Configure UTF-8 encoding (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "PYTHONIOENCODING=utf-8" >> $env:GITHUB_ENV
+        echo "Setting UTF-8 encoding for Windows"
+    
     - name: Display Python version
       run: python -c "import sys; print(f'Python {sys.version}')"
     
@@ -46,9 +53,24 @@ jobs:
       run: |
         echo "Verifying application uses only Python standard library..."
         python -c "
-        import ast, sys
-        with open('configgen.py', 'r') as f:
-            content = f.read()
+        import ast, sys, os
+        
+        # Ensure UTF-8 encoding on all platforms
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
+        
+        try:
+            with open('configgen.py', 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError as e:
+            print(f'ERROR: Unicode decoding failed: {e}')
+            print('Attempting to read with error handling...')
+            with open('configgen.py', 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        
+        print(f'Successfully read {len(content)} characters from configgen.py')
         
         # Parse the AST to find all imports
         tree = ast.parse(content)
