@@ -1,4 +1,4 @@
-# ABIDES Configuration Generator v1.0.0
+# ABIDES Configuration Generator
 
 [![Production Ready](https://img.shields.io/badge/Production-Ready-green.svg)](https://github.com/jpmorganchase/abides-jpmc-public)
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/jpmorganchase/abides-jpmc-public)
