@@ -7,7 +7,7 @@
 [![Agent Types](https://img.shields.io/badge/Agents-6%20Types%20Supported-brightgreen.svg)](https://github.com/jpmorganchase/abides-jpmc-public)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**The definitive configuration generator for ABIDES market simulations** - Generate research-grade configurations with 6+ agent types, standard research templates (RMSC03/RMSC04), ABIDES-Gym compatibility, and enterprise validation.
+**Configuration generator for ABIDES market simulations** - Generate research-grade configurations with 6+ agent types, standard research templates (RMSC03/RMSC04), ABIDES-Gym compatibility, and enterprise validation.
 
 ---
 
