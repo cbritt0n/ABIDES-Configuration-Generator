@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 ABIDES Configuration Generator v1.0.0
+Production Release - CI/CD Ready
 
 The definitive configuration generator for ABIDES (Agent-Based Interactive Discrete 
 Event Simulation) market simulations. Generate research-grade configurations with 

@@ -11,6 +11,10 @@ on:
       - 'pyproject.toml'
       - 'Dockerfile'
       - '.github/workflows/ci-cd.yml'
+      - 'verify_deps.py'
+      - 'verify_deps_simple.py'
+      - 'test_windows_ci.py'
+      - 'diagnostic_test.py'
   pull_request:
     branches: [ main ]
   release:
