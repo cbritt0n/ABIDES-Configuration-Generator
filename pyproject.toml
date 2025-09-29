@@ -12,13 +12,12 @@ authors = [
 ]
 description = "The definitive configuration generator for ABIDES market simulations with research templates, 6 agent types, and ABIDES-Gym compatibility"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
-    "Intended Audience :: Financial and Insurance Industry", 
-    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Financial and Insurance Industry",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -70,11 +69,8 @@ Documentation = "https://github.com/jpmorganchase/abides-jpmc-public/tree/main/A
 "Bug Tracker" = "https://github.com/jpmorganchase/abides-jpmc-public/issues"
 "Research Papers" = "https://arxiv.org/search/?query=ABIDES&searchtype=all"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.dynamic]
-version = {attr = "abides_config_generator.__version__"}
+[tool.setuptools]
+py-modules = ["configgen"]
 
 [tool.black]
 line-length = 88
@@ -109,7 +105,7 @@ python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov=abides_config_generator",
+    "--cov=configgen",
     "--cov-report=html",
     "--cov-report=term-missing",
 ]
@@ -120,10 +116,10 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src"]
+source = ["."]
 omit = [
     "tests/*",
-    "src/abides_config_generator/gui/*",  # Exclude GUI from coverage if needed
+    "setup.py",
 ]
 
 [tool.coverage.report]
