@@ -79,7 +79,7 @@ version = {attr = "abides_config_generator.__version__"}
 [tool.black]
 line-length = 88
 target-version = ["py38", "py39", "py310", "py311"]
-include = '\.pyi?$'
+include = '\\.pyi?$'
 
 [tool.isort]
 profile = "black"
@@ -136,6 +136,4 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\bProtocol\):",
-    "@(abc\.)?abstractmethod",
 ]
